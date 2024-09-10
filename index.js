@@ -54,6 +54,7 @@ const pollTransactions = async () => {
     }
 
     console.log("Polling completed successfully");
+    return response;
   } catch (e) {
     console.error("Polling Error:", e);
   }
@@ -65,8 +66,8 @@ setInterval(pollTransactions, POLLING_INTERVAL);
 // MAIN Call to INitiate polling and real time fetching
 app.get("/", async (req, res) => {
   try {
-    await pollTransactions();
-    res.status(200).json({ message: "Polling executed successfully" });
+    const response = await pollTransactions();
+    res.status(200).json({ message: "Polling executed successfully" , response});
   } catch (e) {
     console.error("Error during manual polling:", e);
     res.status(400).json({ error: e.message });
