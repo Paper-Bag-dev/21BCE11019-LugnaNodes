@@ -13,7 +13,6 @@ Requirements: POSTMAN, NodeJS and JS.
 5. Run command **npm install** followed by **npm run start** to initialize the Node Server.
 
 ### How to test?
--
 - By calling the http://localhost:5000/ at home route "/" the beacon id would be automatically fetched by 
 Moralis API and necessary data would be parsed from the response to make the ETH Deposit Tracker run.
 - The Tracked Data is stored in MongoDB parsed in the provided format and is realtime fetched.
