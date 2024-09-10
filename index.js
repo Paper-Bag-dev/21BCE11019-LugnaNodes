@@ -15,21 +15,30 @@ connectDb(process.env.MONGO_URI);
 app.use(cors());
 app.use(express.json());
 
-app.get("/", async (req, res) => {
+// Polling function to fetch transactions and update the database
+const pollTransactions = async () => {
   try {
+    console.log("Polling for new transactions...");
     const beacon = process.env.BEACON;
     const chain = "0x1";
 
-    const response =
-      await Moralis.EvmApi.transaction.getWalletTransactionsVerbose({
-        address: beacon,
-        chain,
-      });
+    // Fetch transactions from Moralis API
+    const response = await Moralis.EvmApi.transaction.getWalletTransactionsVerbose({
+      address: beacon,
+      chain,
+    });
+
+    console.log("API Response:", response);
 
     const result = response.toJSON().result;
 
-    result.map(async (item) => {
+    console.log(`Number of transactions received: ${result.length}`);
+
+    for (const item of result) {
+      console.log("Processing transaction:", item.block_number);
       const check = await Deposit.findOne({ blockNumber: item.block_number });
+
+      // Create new record in the database after checking it exists or not
       if (!check) {
         await Deposit.create({
           blockNumber: item.block_number,
@@ -38,12 +47,28 @@ app.get("/", async (req, res) => {
           hash: item.hash,
           pubkey: item.decoded_call.params[0].value,
         });
+        console.log(`New transaction added: ${item.hash}`);
+      } else {
+        console.log(`Transaction already exists: ${item.block_number}`);
       }
-    });
+    }
 
-    res.status(200).json(response);
+    console.log("Polling completed successfully");
   } catch (e) {
-    console.log(`Something Went Wrong ${e}`);
+    console.error("Polling Error:", e);
+  }
+};
+
+const POLLING_INTERVAL = 10 * 1000;
+setInterval(pollTransactions, POLLING_INTERVAL);
+
+// MAIN Call to INitiate polling and real time fetching
+app.get("/", async (req, res) => {
+  try {
+    await pollTransactions();
+    res.status(200).json({ message: "Polling executed successfully" });
+  } catch (e) {
+    console.error("Error during manual polling:", e);
     res.status(400).json({ error: e.message });
   }
 });
